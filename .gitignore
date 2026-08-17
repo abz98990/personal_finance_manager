@@ -1,0 +1,32 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.iml
+
+# Backend (Node)
+Development/backend/node_modules/
+Development/backend/.env
+Development/backend/*.log
+
+# ML service (Python)
+Development/ml-service/.venv/
+Development/ml-service/__pycache__/
+Development/ml-service/**/__pycache__/
+Development/ml-service/*.pyc
+Development/ml-service/.pytest_cache/
+Development/ml-service/models/*.joblib
+Development/ml-service/models/metrics.json
+
+# Mobile (Flutter)
+Development/mobile/.dart_tool/
+Development/mobile/.flutter-plugins
+Development/mobile/.flutter-plugins-dependencies
+Development/mobile/build/
+Development/mobile/.packages
+Development/mobile/pubspec.lock
+Development/mobile/android/.gradle/
+Development/mobile/android/local.properties
