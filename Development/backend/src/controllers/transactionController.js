@@ -44,7 +44,7 @@ async function create(req, res, next) {
           source = 'ai';
         }
       } catch (mlErr) {
-        // ML service unavailable/unreachable — fall back to uncategorized manual entry.
+        // Categorization is a nice-to-have; never block saving the transaction.
         console.warn('ML categorization failed:', mlErr.message);
       }
     }
@@ -100,7 +100,6 @@ async function remove(req, res, next) {
   }
 }
 
-// Monthly totals grouped by category, used for the dashboard and budget screens.
 async function summary(req, res, next) {
   try {
     const { month } = req.query; // 'YYYY-MM'

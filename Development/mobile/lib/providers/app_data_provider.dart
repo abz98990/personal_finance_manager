@@ -6,8 +6,6 @@ import '../models/budget.dart';
 import '../models/savings_goal.dart';
 import '../services/api_client.dart';
 
-/// Central app state: categories, transactions, budgets and savings goals
-/// for the signed-in user, plus the ML forecast for the current month.
 class AppDataProvider extends ChangeNotifier {
   final ApiClient api;
   AppDataProvider(this.api);
@@ -70,7 +68,7 @@ class AppDataProvider extends ChangeNotifier {
     try {
       forecast = await api.get('/ml/predict/forecast');
     } catch (_) {
-      forecast = null; // Not enough history yet, or ML service unavailable.
+      forecast = null; // Not enough history yet, or the ML service is down.
     }
   }
 

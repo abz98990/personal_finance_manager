@@ -1,29 +1,9 @@
-"""Synthetic transaction data generator.
+"""Generates synthetic transaction data for training the category classifier.
 
-Real, labelled personal-transaction data is sensitive and hard to obtain (see
-FPR chapter on ethics), so training data here is generated from realistic
-merchant/description templates and amount distributions per category. This
-keeps the pipeline fully reproducible and free of PII while still exercising
-the same text + amount feature space real bank data would produce.
-
-The generator deliberately models the four properties that make real
-transaction categorisation hard, rather than producing trivially separable
-classes:
-
-1. **Ambiguous merchants** - a supermarket sells groceries, fuel and a coffee;
-   Amazon sells books, groceries and a streaming subscription. Such merchants
-   are sampled into several categories, so the merchant token alone is not a
-   reliable label.
-2. **Uninformative descriptions** - a large share of real bank rows carry
-   generic memos ("CARD PAYMENT", "CONTACTLESS") that provide no signal, so
-   the classifier must fall back on merchant and amount.
-3. **Overlapping amounts** - category amount distributions are heavy-tailed
-   and overlap, so amount is informative but not decisive.
-4. **Label noise** - users miscategorise their own spending; a small
-   proportion of labels are randomly corrupted.
-
-Together these give a realistic, non-saturated evaluation in which different
-algorithms can be meaningfully compared.
+Real labelled bank data is personal financial data and can't be used here, so we
+synthesise it. The generator deliberately keeps the classes hard to separate —
+shared merchants, generic memos, overlapping amounts, a little label noise —
+because a model trained on tidy data falls over on real statements.
 """
 import random
 
@@ -32,12 +12,13 @@ import pandas as pd
 
 RANDOM_SEED = 42
 
-# Proportion of rows whose description is replaced by an uninformative memo.
+# Share of rows that get a merchant trading in several categories.
+AMBIGUOUS_MERCHANT_RATE = 0.30
+# Share of rows whose memo carries no category signal.
 GENERIC_DESCRIPTION_RATE = 0.35
-# Proportion of rows whose label is randomly corrupted (user miscategorisation).
+# Share of labels randomly corrupted, standing in for user miscategorisation.
 LABEL_NOISE_RATE = 0.05
 
-# Memos that carry no category signal, mirroring real bank statement exports.
 GENERIC_DESCRIPTIONS = [
     "Card payment",
     "Contactless payment",
@@ -47,9 +28,8 @@ GENERIC_DESCRIPTIONS = [
     "POS purchase",
 ]
 
-# Merchants that legitimately sell across several categories. Each is listed
-# under every category it plausibly belongs to, so the model cannot treat the
-# merchant token as a unique key for a class.
+# Merchants listed under every category they plausibly sell in, so the merchant
+# name alone is never a reliable label.
 AMBIGUOUS_MERCHANTS = {
     "Tesco": ["Groceries", "Food & Drink", "Transport", "Health"],
     "Sainsbury's": ["Groceries", "Food & Drink"],
@@ -61,7 +41,7 @@ AMBIGUOUS_MERCHANTS = {
     "Costco": ["Groceries", "Shopping"],
 }
 
-# category -> (merchants, description templates, (amount_mean, amount_std, amount_min))
+# category -> (merchants, descriptions, (amount_mean, amount_std, amount_min))
 CATEGORY_PROFILES = {
     "Food & Drink": (
         ["Coffee Shop", "Starbucks", "Costa Coffee", "Local Cafe", "Pret A Manger", "Greggs", "Bubble Tea Co"],
@@ -112,26 +92,13 @@ CATEGORY_PROFILES = {
 
 CATEGORIES = list(CATEGORY_PROFILES.keys())
 
-# Reverse index: category -> ambiguous merchants that can appear under it.
 _AMBIGUOUS_BY_CATEGORY = {category: [] for category in CATEGORIES}
 for _merchant, _categories in AMBIGUOUS_MERCHANTS.items():
     for _category in _categories:
         _AMBIGUOUS_BY_CATEGORY[_category].append(_merchant)
 
 
-def generate_dataset(
-    n_per_category: int = 400,
-    seed: int = RANDOM_SEED,
-    ambiguous_merchant_rate: float = 0.30,
-    generic_description_rate: float = GENERIC_DESCRIPTION_RATE,
-    label_noise_rate: float = LABEL_NOISE_RATE,
-) -> pd.DataFrame:
-    """Builds a labelled transaction dataset with realistic class overlap.
-
-    Set the three rate arguments to 0.0 to recover a trivially separable
-    dataset; the FPR uses that configuration as an ablation baseline to show
-    how much of the achievable score is due to the task rather than the model.
-    """
+def generate_dataset(n_per_category: int = 400, seed: int = RANDOM_SEED) -> pd.DataFrame:
     rng = random.Random(seed)
     np_rng = np.random.default_rng(seed)
     rows = []
@@ -139,21 +106,17 @@ def generate_dataset(
     for category, (merchants, descriptions, (mean, std, minimum)) in CATEGORY_PROFILES.items():
         shared = _AMBIGUOUS_BY_CATEGORY[category]
         for _ in range(n_per_category):
-            # Some rows come from merchants that also trade in other categories.
-            if shared and rng.random() < ambiguous_merchant_rate:
+            if shared and rng.random() < AMBIGUOUS_MERCHANT_RATE:
                 merchant = rng.choice(shared)
             else:
                 merchant = rng.choice(merchants)
 
-            # Some rows carry a generic memo with no category signal.
-            if rng.random() < generic_description_rate:
+            if rng.random() < GENERIC_DESCRIPTION_RATE:
                 description = rng.choice(GENERIC_DESCRIPTIONS)
             else:
                 description = rng.choice(descriptions)
 
-            # Log-normal-ish amounts: right-skewed and overlapping between classes.
-            amount = float(np_rng.normal(mean, std))
-            amount = max(minimum, round(amount, 2))
+            amount = max(minimum, round(float(np_rng.normal(mean, std)), 2))
 
             rows.append(
                 {
@@ -166,13 +129,9 @@ def generate_dataset(
 
     df = pd.DataFrame(rows)
 
-    # Users miscategorise their own spending; corrupt a small share of labels.
-    if label_noise_rate > 0:
-        n_noisy = int(len(df) * label_noise_rate)
-        noisy_idx = np_rng.choice(len(df), size=n_noisy, replace=False)
-        for idx in noisy_idx:
-            true_label = df.at[idx, "category"]
-            alternatives = [c for c in CATEGORIES if c != true_label]
-            df.at[idx, "category"] = rng.choice(alternatives)
+    n_noisy = int(len(df) * LABEL_NOISE_RATE)
+    for idx in np_rng.choice(len(df), size=n_noisy, replace=False):
+        alternatives = [c for c in CATEGORIES if c != df.at[idx, "category"]]
+        df.at[idx, "category"] = rng.choice(alternatives)
 
     return df.sample(frac=1, random_state=seed).reset_index(drop=True)

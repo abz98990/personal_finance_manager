@@ -2,7 +2,6 @@ const { fn, col, literal } = require('sequelize');
 const { Transaction } = require('../models');
 const { categorizeTransaction, forecastSpending } = require('../services/mlService');
 
-// One-off category prediction, used by the "add transaction" screen before saving.
 async function predictCategory(req, res, next) {
   try {
     const { description, merchant, amount } = req.body;
@@ -18,7 +17,6 @@ async function predictCategory(req, res, next) {
   }
 }
 
-// Forecasts next month's total expense from this user's monthly history.
 async function predictForecast(req, res, next) {
   try {
     const rows = await Transaction.findAll({

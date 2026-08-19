@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Default points at the Android emulator's loopback alias for the host
-/// machine. Override at build time with:
-///   flutter run --dart-define=API_BASE_URL=http://192.168.x.x:4000/api
+/// 10.0.2.2 is how the Android emulator reaches the host machine's localhost.
+/// Override with: flutter run --dart-define=API_BASE_URL=http://<ip>:4000/api
 const String _defaultBaseUrl = 'http://10.0.2.2:4000/api';
 
 class ApiException implements Exception {

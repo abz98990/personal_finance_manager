@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 4000;
 async function start() {
   try {
     await sequelize.authenticate();
-    // In development, sync schema automatically; use migrations in production.
+    // Production should use migrations rather than sync.
     if (process.env.NODE_ENV !== 'production') {
       await sequelize.sync();
     }

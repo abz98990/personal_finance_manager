@@ -9,8 +9,7 @@ async function list(req, res, next) {
 
     const budgets = await Budget.findAll({ where, include: [{ model: Category }] });
 
-    // Attach actual spend for the same month/category so the client doesn't
-    // need a second round trip to compute progress bars.
+    // Spend is attached here so the client can draw progress bars without a second call.
     const withSpend = await Promise.all(
       budgets.map(async (budget) => {
         const monthStr = budget.month.toISOString ? budget.month.toISOString().slice(0, 7) : String(budget.month).slice(0, 7);

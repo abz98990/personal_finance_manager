@@ -1,16 +1,13 @@
-"""Spending forecast from a user's monthly expense history.
+"""Spending forecast from a user's monthly totals.
 
-With only a handful of monthly totals per user, a full ARIMA-style
-time-series model would badly overfit. Instead this fits a simple linear
-trend (least-squares regression of total against month index) which is the
-standard, well-understood baseline referenced in the IPR's methodology
-(section 2.2 / objective 5) and is robust with as few as two data points.
+A least-squares linear trend rather than anything fancier: users typically have
+only a handful of months of history, and ARIMA-style models overfit badly on that.
 """
 import numpy as np
 
 
 def forecast_next_month(history: list[dict]) -> dict:
-    """history: [{"month": "YYYY-MM", "total": float}, ...] sorted ascending by month."""
+    """history: [{"month": "YYYY-MM", "total": float}, ...] ascending by month."""
     if len(history) < 2:
         raise ValueError("At least 2 months of history are required to forecast")
 

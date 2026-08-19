@@ -21,8 +21,8 @@ pip install -r requirements.txt
 
 ## Train the classifier
 
-Training data is synthetic (see `app/categorize/data.py` for why: real
-transaction data is sensitive personal financial data, see IPR section 5.2).
+Training data is synthetic — real transaction data is personal financial data
+and can't be used here. See `app/categorize/data.py`.
 
 ```bash
 python train.py

@@ -5,7 +5,6 @@ const client = axios.create({
   timeout: 5000,
 });
 
-// Predicts a category for a single transaction description/merchant/amount.
 async function categorizeTransaction({ description, merchant, amount }) {
   const { data } = await client.post('/predict/category', {
     description: description || '',
@@ -15,9 +14,8 @@ async function categorizeTransaction({ description, merchant, amount }) {
   return data; // { category, confidence }
 }
 
-// Forecasts next-period spending from a user's historical monthly totals.
+// history: [{ month: 'YYYY-MM', total: number }, ...] ascending by month
 async function forecastSpending(history) {
-  // history: [{ month: 'YYYY-MM', total: number }, ...] sorted ascending by month
   const { data } = await client.post('/predict/forecast', { history });
   return data; // { nextMonthTotal, trend }
 }
